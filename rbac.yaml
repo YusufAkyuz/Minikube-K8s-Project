@@ -1,4 +1,64 @@
-# junior: test -> admin, production -> view
+# -----------------------------
+# Roles
+# -----------------------------
+# Junior – test namespace – tüm haklar
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: junior-test-admin
+  namespace: test
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+# Junior – production namespace – sadece okuma/listeleme
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: junior-production-view
+  namespace: production
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+---
+# Senior – test namespace – tüm haklar
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: senior-test-admin
+  namespace: test
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+# Senior – production namespace – tüm haklar
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: senior-production-admin
+  namespace: production
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+# Senior – cluster genelinde okuma/listeleme
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: senior-cluster-view
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+---
+# -----------------------------
+# RoleBindings / ClusterRoleBindings
+# -----------------------------
+# Junior – test namespace
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -9,10 +69,11 @@ subjects:
   name: junior
   apiGroup: rbac.authorization.k8s.io
 roleRef:
-  kind: ClusterRole
-  name: admin
+  kind: Role
+  name: junior-test-admin
   apiGroup: rbac.authorization.k8s.io
 ---
+# Junior – production namespace
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -23,11 +84,11 @@ subjects:
   name: junior
   apiGroup: rbac.authorization.k8s.io
 roleRef:
-  kind: ClusterRole
-  name: view
-  apiGroup: rbac.authorization.k8s.io 
+  kind: Role
+  name: junior-production-view
+  apiGroup: rbac.authorization.k8s.io
 ---
-# senior: test+production -> admin, cluster -> view
+# Senior – test namespace
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -38,10 +99,11 @@ subjects:
   name: senior
   apiGroup: rbac.authorization.k8s.io
 roleRef:
-  kind: ClusterRole
-  name: admin
+  kind: Role
+  name: senior-test-admin
   apiGroup: rbac.authorization.k8s.io
 ---
+# Senior – production namespace
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -52,19 +114,20 @@ subjects:
   name: senior
   apiGroup: rbac.authorization.k8s.io
 roleRef:
-  kind: ClusterRole
-  name: admin
+  kind: Role
+  name: senior-production-admin
   apiGroup: rbac.authorization.k8s.io
 ---
+# Senior – cluster genelinde okuma/listeleme
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: senior-view-cluster
+  name: senior-cluster-view-binding
 subjects:
 - kind: Group
   name: senior
   apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: ClusterRole
-  name: view
+  name: senior-cluster-view
   apiGroup: rbac.authorization.k8s.io
