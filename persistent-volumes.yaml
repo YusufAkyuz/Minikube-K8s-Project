@@ -1,0 +1,102 @@
+# persistent-volumes.yaml
+# Test PV ve PVC
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv-test
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce                       # Depolama alanı tek bir node tarafından okunup yazılabilir kılınmasını sağlıyordu
+  persistentVolumeReclaimPolicy: Retain   # PV silindiğinde released olur ama verilerin silinmez kalıcı depolamadan
+  hostPath:
+    path: "/mnt/data/mysql-test"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wordpress-pv-test
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/mnt/data/wordpress-test"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Production PV ve PVC
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv-prod
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/mnt/data/mysql-prod"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wordpress-pv-prod
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/mnt/data/wordpress-prod"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+  namespace: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
