@@ -8,10 +8,10 @@ spec:
   capacity:
     storage: 5Gi
   accessModes:
-    - ReadWriteOnce                       # Depolama alanı tek bir node tarafından okunup yazılabilir kılınmasını sağlıyordu
-  persistentVolumeReclaimPolicy: Retain   # PV silindiğinde released olur ama verilerin silinmez kalıcı depolamadan
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/mnt/data/mysql-test"
+    path: "/Users/yusufakyuz/minikube-data/mysql-test"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -36,7 +36,7 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/mnt/data/wordpress-test"
+    path: "/Users/yusufakyuz/minikube-data/wordpress-test"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -62,7 +62,7 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/mnt/data/mysql-prod"
+    path: "/Users/yusufakyuz/minikube-data/mysql-prod"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -87,7 +87,7 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/mnt/data/wordpress-prod"
+    path: "/Users/yusufakyuz/minikube-data/wordpress-prod"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

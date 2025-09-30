@@ -18,9 +18,14 @@ spec:
       # Test node'unda çalışması için : NodeSelector kullanılabildiği gibi NodeAffinity'de kullanılqbilir
       nodeSelector:
         node-role: test
+      initContainers:
+      # MySQL'in hazır olmasını bekle
+      - name: wait-for-mysql
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z mysql 3306; do echo waiting for mysql; sleep 2; done;']
       containers:
       - name: wordpress
-        image: wordpress:latest
+        image: wordpress:6.4-apache
         env:
         - name: WORDPRESS_DB_HOST
           value: mysql

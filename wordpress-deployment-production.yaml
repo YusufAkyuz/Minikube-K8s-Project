@@ -24,9 +24,13 @@ spec:
         operator: "Equal"
         value: "production"
         effect: "NoSchedule"
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox:1.35
+        command: ['sh', '-c', 'until nc -z mysql 3306; do echo waiting for mysql; sleep 2; done;']
       containers:
       - name: wordpress
-        image: wordpress:latest
+        image: wordpress:6.4-apache
         env:
         - name: WORDPRESS_DB_HOST
           value: mysql

@@ -33,7 +33,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
       - name: mysql
-        image: mysql:5.6
+        image: mysql:8.0
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
@@ -55,13 +55,35 @@ spec:
         volumeMounts:
         - name: mysql-storage
           mountPath: /var/lib/mysql
+        # Aşağıdaki satırları ekleyin
+        args:
+        - "--default-authentication-plugin=mysql_native_password"
+        - "--skip-log-bin"
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: 1Gi
+            cpu: 250m
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: 2Gi
+            cpu: 500m
+        # Liveness probe ekleyin
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        # Readiness probe ekleyin
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
       volumes:
       - name: mysql-storage
         persistentVolumeClaim:

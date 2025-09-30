@@ -27,17 +27,19 @@ spec:
       # WordPress ile aynı node'da çalışması için
       affinity:
         podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - wordpress
-            topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - wordpress
+              topologyKey: kubernetes.io/hostname
       containers:
       - name: mysql
-        image: mysql:5.6
+        image: mysql:8.0
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
