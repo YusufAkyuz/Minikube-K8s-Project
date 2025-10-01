@@ -1,0 +1,62 @@
+# app-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-app
+  namespace: production
+  labels:
+    app: k8s-app
+spec:
+  replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2        # Aynı anda 2 pod eklenebilir
+      maxUnavailable: 2  # Aynı anda 2 pod güncellenebilir
+  selector:
+    matchLabels:
+      app: k8s-app
+  template:
+    metadata:
+      labels:
+        app: k8s-app
+    spec:
+      # Production node'larında çalışması için
+      tolerations:
+      - key: "environment"
+        operator: "Equal"
+        value: "production"
+        effect: "NoSchedule"
+      nodeSelector:
+        node-role: production
+      containers:
+      - name: k8s-app
+        image: ozgurozturknet/k8s:v1
+        ports:
+        - containerPort: 80
+          name: http
+        # Liveness Probe - Container sağlıklı mı?
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # Readiness Probe - Traffic almaya hazır mı?
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

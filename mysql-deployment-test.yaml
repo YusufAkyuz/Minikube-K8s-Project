@@ -20,14 +20,16 @@ spec:
         node-role: test
       affinity:
         podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
                   - key: app
                     operator: In
                     values:
-                      - wordpress
-              topologyKey: kubernetes.io/hostname
+                    - wordpress
+                topologyKey: kubernetes.io/hostname
       containers:
       - name: mysql
         image: mysql:8.0
@@ -55,7 +57,6 @@ spec:
         args:
         - "--default-authentication-plugin=mysql_native_password"
         - "--skip-log-bin"
-        # Aşağıdaki satırları EKLEYİN
         - "--innodb-buffer-pool-size=256M"
         - "--innodb-log-file-size=64M"
         resources:
@@ -72,10 +73,11 @@ spec:
             - ping
             - -h
             - localhost
-          initialDelaySeconds: 120
+          initialDelaySeconds: 120  
           periodSeconds: 20
           timeoutSeconds: 10
           failureThreshold: 5      
+
         readinessProbe:
           exec:
             command:
@@ -83,10 +85,10 @@ spec:
             - ping
             - -h
             - localhost
-          initialDelaySeconds: 60  
+          initialDelaySeconds: 60   
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 5   
+          failureThreshold: 5       
       volumes:
       - name: mysql-storage
         persistentVolumeClaim:
