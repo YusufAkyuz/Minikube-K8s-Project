@@ -1,4 +1,3 @@
-# mysql-deployment-test.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,29 +7,28 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      # Deployment, app=mysql ve env=test etiketli Pod’ları kendi Pod’u olarak kabul ediyor.
-      app: mysql  
+      app: mysql
       env: test
   template:
     metadata:
       labels:
-        app: mysql 
+        app: mysql
         env: test
     spec:
       # Test node'unda çalışması için
       nodeSelector:
         node-role: test
-      # Pod Anti-Affinity - WordPress ile aynı node'da çalışsın
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - wordpress
-            topologyKey: kubernetes.io/hostname
+      # Pod Anti-Affinity kısmını geçici olarak kaldıralım (sorun çıkarabilir)
+      # affinity:
+      #   podAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #     - labelSelector:
+      #         matchExpressions:
+      #         - key: app
+      #           operator: In
+      #           values:
+      #           - wordpress
+      #       topologyKey: kubernetes.io/hostname
       containers:
       - name: mysql
         image: mysql:8.0
@@ -55,10 +53,12 @@ spec:
         volumeMounts:
         - name: mysql-storage
           mountPath: /var/lib/mysql
-        # Aşağıdaki satırları ekleyin
         args:
         - "--default-authentication-plugin=mysql_native_password"
         - "--skip-log-bin"
+        # Aşağıdaki satırları EKLEYİN
+        - "--innodb-buffer-pool-size=256M"
+        - "--innodb-log-file-size=64M"
         resources:
           requests:
             memory: 1Gi
@@ -66,24 +66,29 @@ spec:
           limits:
             memory: 2Gi
             cpu: 500m
-        # Liveness probe ekleyin
         livenessProbe:
           exec:
             command:
             - mysqladmin
             - ping
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-        # Readiness probe ekleyin
+            - -h
+            - localhost
+          initialDelaySeconds: 120  # 60'tan 120'ye çıkarın
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 5       # 3'ten 5'e çıkarın
+
         readinessProbe:
           exec:
             command:
             - mysqladmin
             - ping
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
+            - -h
+            - localhost
+          initialDelaySeconds: 60   # 30'dan 60'a çıkarın
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5       # 3'ten 5'e çıkarın
       volumes:
       - name: mysql-storage
         persistentVolumeClaim:

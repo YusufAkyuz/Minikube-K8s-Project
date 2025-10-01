@@ -1,4 +1,7 @@
 # persistent-volumes.yaml
+# NOT: Minikube dynamic provisioning kullandığı için manuel PV tanımlamaya gerek yok
+# Ancak eğer manuel PV kullanmak isterseniz, hostPath'leri node içindeki path'ler olmalı
+
 # Test PV ve PVC
 apiVersion: v1
 kind: PersistentVolume
@@ -10,8 +13,10 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual  # StorageClass eklenmeli
   hostPath:
-    path: "/Users/yusufakyuz/minikube-data/mysql-test"
+    path: "/data/mysql-test"  # Node içindeki path
+    type: DirectoryOrCreate   # Otomatik dizin oluşturma
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -21,6 +26,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: manual  # PV ile eşleşmeli
   resources:
     requests:
       storage: 5Gi
@@ -35,8 +41,10 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
   hostPath:
-    path: "/Users/yusufakyuz/minikube-data/wordpress-test"
+    path: "/data/wordpress-test"
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -46,6 +54,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: manual
   resources:
     requests:
       storage: 5Gi
@@ -61,8 +70,10 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
   hostPath:
-    path: "/Users/yusufakyuz/minikube-data/mysql-prod"
+    path: "/data/mysql-prod"
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -72,6 +83,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: manual
   resources:
     requests:
       storage: 10Gi
@@ -86,8 +98,10 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
   hostPath:
-    path: "/Users/yusufakyuz/minikube-data/wordpress-prod"
+    path: "/data/wordpress-prod"
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -97,6 +111,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: manual
   resources:
     requests:
       storage: 10Gi
