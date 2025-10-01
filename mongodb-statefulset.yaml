@@ -1,0 +1,140 @@
+# mongodb-statefulset.yaml
+# Headless Service - StatefulSet için gerekli
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-headless
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+---
+# MongoDB Service - Client bağlantıları için
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: default
+spec:
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+---
+# ConfigMap - MongoDB initialization script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init
+  namespace: default
+data:
+  init.js: |
+    rs.initiate({
+      _id: "rs0",
+      members: [
+        { _id: 0, host: "mongodb-0.mongodb-headless:27017", priority: 2 },
+        { _id: 1, host: "mongodb-1.mongodb-headless:27017", priority: 1 }
+      ]
+    });
+    
+    // Admin kullanıcı oluştur
+    db = db.getSiblingDB('admin');
+    db.createUser({
+      user: 'admin',
+      pwd: 'adminpass123',
+      roles: [{ role: 'root', db: 'admin' }]
+    });
+---
+# Secret - MongoDB credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: default
+type: Opaque
+data:
+  # adminpass123 (base64 encoded)
+  mongodb-root-password: YWRtaW5wYXNzMTIz
+---
+# StatefulSet - MongoDB Replica Set
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: default
+spec:
+  serviceName: mongodb-headless
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:5.0
+        command:
+        - mongod
+        - "--replSet"
+        - "rs0"
+        - "--bind_ip"
+        - "0.0.0.0"
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: admin
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongodb-root-password
+        volumeMounts:
+        - name: mongodb-data
+          mountPath: /data/db
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - mongo
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - mongo
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: init-script
+        configMap:
+          name: mongodb-init
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 5Gi
