@@ -1,0 +1,230 @@
+# complete-node-info.yaml
+# Bu dosya node bilgilerini gösteren bir uygulama kurar
+
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nodeinfo
+
+---
+# Deployment - Her node'dan pod bilgisi gösterecek
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodeinfo-app
+  namespace: nodeinfo
+spec:
+  replicas: 5  # Her node'da bir tane olması için
+  selector:
+    matchLabels:
+      app: nodeinfo
+  template:
+    metadata:
+      labels:
+        app: nodeinfo
+    spec:
+      # Pod'ları node'lara dağıt
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - nodeinfo
+              topologyKey: kubernetes.io/hostname
+      
+      # Production taint'ini tolere et
+      tolerations:
+      - key: "environment"
+        operator: "Equal"
+        value: "production"
+        effect: "NoSchedule"
+      
+      containers:
+      - name: nodeinfo
+        image: nginx:alpine
+        env:
+        # Node ve Pod bilgilerini environment variable olarak al
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        ports:
+        - containerPort: 80
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          # HTML sayfası oluştur
+          cat > /usr/share/nginx/html/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Node Info</title>
+              <meta http-equiv="refresh" content="2">
+              <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      min-height: 100vh;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      padding: 20px;
+                  }
+                  .container {
+                      background: white;
+                      border-radius: 20px;
+                      padding: 40px;
+                      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                      max-width: 600px;
+                      width: 100%;
+                  }
+                  h1 {
+                      color: #667eea;
+                      text-align: center;
+                      margin-bottom: 30px;
+                      font-size: 2.5em;
+                  }
+                  .info-card {
+                      background: #f8f9fa;
+                      border-left: 4px solid #667eea;
+                      padding: 15px 20px;
+                      margin: 15px 0;
+                      border-radius: 8px;
+                      transition: transform 0.2s;
+                  }
+                  .info-card:hover {
+                      transform: translateX(5px);
+                      background: #e9ecef;
+                  }
+                  .label {
+                      font-weight: bold;
+                      color: #495057;
+                      font-size: 0.9em;
+                      text-transform: uppercase;
+                      letter-spacing: 1px;
+                  }
+                  .value {
+                      color: #212529;
+                      font-size: 1.2em;
+                      margin-top: 5px;
+                      font-family: 'Courier New', monospace;
+                  }
+                  .emoji {
+                      font-size: 2em;
+                      margin-right: 10px;
+                  }
+                  .timestamp {
+                      text-align: center;
+                      color: #6c757d;
+                      margin-top: 20px;
+                      font-size: 0.9em;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1><span class="emoji">🎯</span>Kubernetes Node Info</h1>
+                  
+                  <div class="info-card">
+                      <div class="label">🖥️ Node Name</div>
+                      <div class="value">NODE_NAME_PLACEHOLDER</div>
+                  </div>
+                  
+                  <div class="info-card">
+                      <div class="label">📦 Pod Name</div>
+                      <div class="value">POD_NAME_PLACEHOLDER</div>
+                  </div>
+                  
+                  <div class="info-card">
+                      <div class="label">🏷️ Namespace</div>
+                      <div class="value">POD_NAMESPACE_PLACEHOLDER</div>
+                  </div>
+                  
+                  <div class="info-card">
+                      <div class="label">🌐 Pod IP</div>
+                      <div class="value">POD_IP_PLACEHOLDER</div>
+                  </div>
+                  
+                  <div class="timestamp">
+                      🕐 Auto-refreshing every 2 seconds
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # Environment variable'ları HTML'e yerleştir
+          sed -i "s/NODE_NAME_PLACEHOLDER/$NODE_NAME/g" /usr/share/nginx/html/index.html
+          sed -i "s/POD_NAME_PLACEHOLDER/$POD_NAME/g" /usr/share/nginx/html/index.html
+          sed -i "s/POD_NAMESPACE_PLACEHOLDER/$POD_NAMESPACE/g" /usr/share/nginx/html/index.html
+          sed -i "s/POD_IP_PLACEHOLDER/$POD_IP/g" /usr/share/nginx/html/index.html
+          
+          # Nginx'i başlat
+          nginx -g 'daemon off;'
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+
+---
+# Service - LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeinfo-lb
+  namespace: nodeinfo
+spec:
+  type: LoadBalancer
+  selector:
+    app: nodeinfo
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nodeinfo-ingress
+  namespace: nodeinfo
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: nodeinfo.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nodeinfo-lb
+            port:
+              number: 80

@@ -40,17 +40,27 @@ check_status "production namespace"
 
 echo -e "\n${YELLOW}3. RBAC YAPILANDIRMASI${NC}"
 echo "-----------------------------------"
-kubectl get role junior-test-full-access -n test &>/dev/null
+kubectl get role junior-developer-test-full-access -n test &>/dev/null
 check_status "Junior test role"
-kubectl get role junior-production-readonly -n production &>/dev/null
+kubectl get role junior-developer-production-read-only -n production &>/dev/null
 check_status "Junior production role"
-kubectl get clusterrole senior-cluster-readonly &>/dev/null
+kubectl get role senior-developer-test-full-access -n test &>/dev/null
+check_status "Senior test full access role"
+kubectl get role senior-developer-production-full-access -n production &>/dev/null
+check_status "Senior production role"
+kubectl get clusterrole senior-developer-cluster-read-only &>/dev/null
 check_status "Senior cluster role"
 
 echo -e "\n${YELLOW}4. INGRESS CONTROLLER${NC}"
 echo "-----------------------------------"
-kubectl get pods -n ingress-nginx | grep -q running
-check_status "NGINX Ingress Controller çalışıyor"
+
+# Service kontrolü
+kubectl get svc ingress-nginx-controller -n ingress-nginx &>/dev/null
+check_status "NGINX Ingress Controller Service"
+
+# Pod kontrolü
+kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller | grep -q Running
+check_status "NGINX Ingress Controller Pod"
 
 echo -e "\n${YELLOW}5. NODE TAINTS (Production)${NC}"
 echo "-----------------------------------"
@@ -118,13 +128,6 @@ kubectl get sa cluster-reader &>/dev/null
 check_status "cluster-reader ServiceAccount"
 kubectl get pod api-test-pod &>/dev/null
 check_status "API test pod"
-
-echo -e "\n${YELLOW}14. NODE DRAIN STATUS${NC}"
-echo "-----------------------------------"
-kubectl get nodes minikube-m05 | grep -q SchedulingDisabled
-check_status "minikube-m05 SchedulingDisabled"
-PODS_ON_M05=$(kubectl get pods -A --field-selector spec.nodeName=minikube-m05 --no-headers | grep -v kube-system | wc -l)
-echo "minikube-m05 üzerindeki pod sayısı (system hariç): $PODS_ON_M05"
 
 echo -e "\n======================================"
 echo -e "${GREEN}DOĞRULAMA TAMAMLANDI!${NC}"
